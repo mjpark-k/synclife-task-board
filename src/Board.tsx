@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Task, Status } from './types'
-import { getTasks } from './api/client'
+import { getTasks, updateTask } from './api/client'
 import { Column } from './components/Column'
 
 const COLUMNS: { status: Status; title: string }[] = [
@@ -41,7 +41,16 @@ export default function Board() {
   //   - 실패(15%)하면 이전 상태로 되돌리고 사용자에게 알림
   //   - 같은 카드를 빠르게 연속 이동해도 최종 상태가 서버와 일치하도록
   const moveTask = (id: string, status: Status) => {
+    const task = tasks.find((t) => t.id === id)
+    if (!task || task.status === status) return
+
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)))
+
+    updateTask(id, { status, version: task.version }).then((updatedTask) => {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
+      )
+    })
   }
 
   const byStatus = useMemo(() => {
@@ -64,7 +73,7 @@ export default function Board() {
 
   if (tasks.length === 0) {
     return <p className="hint">등록된 태스크가 없습니다.</p>
-}
+  }
 
   return (
     <div className="board">
