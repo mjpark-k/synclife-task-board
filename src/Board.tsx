@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Task, Status } from './types'
 import { getTasks } from './api/client'
 import { Column } from './components/Column'
@@ -12,14 +12,28 @@ const COLUMNS: { status: Status; title: string }[] = [
 export default function Board() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadTasks = useCallback(() => {
+    setLoading(true)
+    setError(null)
+
+    getTasks()
+      .then((data) => {
+        setTasks(data)
+      })
+      .catch(() => {
+        setError('태스크를 불러오지 못했습니다.')
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [])
 
   useEffect(() => {
-    // 순진한 초기 로드: 로딩만 처리합니다.
-    // TODO(P1): 에러 상태 + 재시도, 빈 상태 처리를 구현하세요.
-    getTasks()
-      .then((data) => setTasks(data))
-      .finally(() => setLoading(false))
-  }, [])
+    // TODO(P1): 초기 로드 상태 처리
+    loadTasks()
+  }, [loadTasks])
 
   // ⚠️ 서버에 저장하지 않고 로컬 상태만 바꾸는 "순진한" 이동입니다.
   // TODO(P1): 낙관적 업데이트 + 실패 시 롤백 + 경쟁 상태 처리를 구현하세요.
@@ -37,6 +51,20 @@ export default function Board() {
   }, [tasks])
 
   if (loading) return <p className="hint">불러오는 중…</p>
+
+  // error가 있으면 에러 UI + 재시도 버튼 추가
+  if (error) {
+    return (
+      <div>
+        <p className="hint">{error}</p>
+        <button onClick={loadTasks}>다시 불러오기</button>
+      </div>
+    )
+  }
+
+  if (tasks.length === 0) {
+    return <p className="hint">등록된 태스크가 없습니다.</p>
+}
 
   return (
     <div className="board">
