@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Task, Status } from './types'
 import { getTasks, updateTask } from './api/client'
 import { Column } from './components/Column'
@@ -14,6 +14,8 @@ export default function Board() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+
+  const latestMoveRequestRef = useRef<Record<string, number>>({})
 
   const loadTasks = useCallback(() => {
     setLoading(true)
@@ -36,26 +38,30 @@ export default function Board() {
     loadTasks()
   }, [loadTasks])
 
-  // ⚠️ 서버에 저장하지 않고 로컬 상태만 바꾸는 "순진한" 이동입니다.
-  // TODO(P1): 낙관적 업데이트 + 실패 시 롤백 + 경쟁 상태 처리를 구현하세요.
-  //   - updateTask(id, { status, version }) 로 서버에 반영
-  //   - 실패(15%)하면 이전 상태로 되돌리고 사용자에게 알림
-  //   - 같은 카드를 빠르게 연속 이동해도 최종 상태가 서버와 일치하도록
+// 카드 이동은 낙관적으로 먼저 반영하고, 서버 실패 시 롤백합니다.
+// task별 최신 요청 번호를 비교해 오래된 응답이 최신 상태를 덮지 않도록 합니다.
   const moveTask = (id: string, status: Status) => {
     const task = tasks.find((t) => t.id === id)
     if (!task || task.status === status) return
 
     const previousTasks = tasks
 
+    const requestId = (latestMoveRequestRef.current[id] ?? 0) + 1
+    latestMoveRequestRef.current[id] = requestId
+
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)))
 
     updateTask(id, { status, version: task.version })
       .then((updatedTask) => {
+        if (latestMoveRequestRef.current[id] !== requestId) return
+
         setTasks((prev) =>
           prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
         )
       })
       .catch(() => {
+        if (latestMoveRequestRef.current[id] !== requestId) return
+
         setTasks(previousTasks)
         setMessage('저장에 실패해 변경을 되돌렸습니다.')
         window.setTimeout(() => setMessage(null), 3000)
