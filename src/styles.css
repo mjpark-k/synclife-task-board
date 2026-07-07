@@ -105,10 +105,85 @@ body {
   border-left-color: var(--low);
 }
 
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .card-title {
   font-size: 14px;
-  margin-bottom: 8px;
+  min-width: 0;
+  margin-bottom: 0;
   line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.card-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+}
+
+.card-action {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.card-action:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.card-action.danger:hover {
+  color: var(--high);
+  border-color: var(--high);
+}
+
+.card-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-edit-form input,
+.card-edit-form select,
+.card-edit-form textarea {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.card-edit-form textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.card-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.card-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .card-meta {
@@ -148,4 +223,64 @@ body {
   color: #fff;
   font-size: 13px;
   box-shadow: 0 8px 24px rgba(9, 30, 66, 0.2);
+}
+
+.board-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.create-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.create-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.create-form input,
+.create-form select,
+.create-form textarea {
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.create-form textarea {
+  grid-column: 1 / -1;
+  min-height: 72px;
+  resize: vertical;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .create-form {
+    grid-template-columns: 1fr;
+  }
+
+  .create-form textarea,
+  .form-actions {
+    grid-column: auto;
+  }
 }

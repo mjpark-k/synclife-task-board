@@ -3,14 +3,24 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Task, Status } from '../types'
 import { Card } from './Card'
 
+type TaskPatch = {
+  title: string
+  description?: string
+  status: Status
+  priority: Task['priority']
+  version: number
+}
+
 interface Props {
   title: string
   status: Status
   tasks: Task[]
   onMove: (id: string, status: Status) => void
+  onDelete: (id: string) => void
+  onEdit: (id: string, patch: TaskPatch) => void
 }
 
-export function Column({ title, status, tasks, onMove }: Props) {
+export function Column({ title, status, tasks, onMove, onDelete, onEdit }: Props) {
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
   const virtualizer = useVirtualizer({
@@ -42,11 +52,13 @@ export function Column({ title, status, tasks, onMove }: Props) {
 
             return (
               <div
-                key={task.id}
+                key={virtualItem.key}
+                data-index={virtualItem.index}
+                ref={virtualizer.measureElement}
                 className="virtual-row"
                 style={{ transform: `translateY(${virtualItem.start}px)` }}
               >
-                <Card task={task} />
+                <Card task={task} onDelete={onDelete} onEdit={onEdit} />
               </div>
             )
           })}
