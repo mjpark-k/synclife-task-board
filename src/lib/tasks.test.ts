@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { moveTask, filterByTitle } from './tasks'
+import {
+  addTaskToTop,
+  filterByTitle,
+  moveTask,
+  removeTaskById,
+  replaceTask,
+} from './tasks'
 import type { Task } from '../types'
 
 const make = (id: string, over: Partial<Task> = {}): Task => ({
@@ -38,5 +44,65 @@ describe('filterByTitle', () => {
   it('빈 검색어면 전체를 반환한다', () => {
     const tasks = [make('a'), make('b')]
     expect(filterByTitle(tasks, '   ')).toHaveLength(2)
+  })
+})
+
+describe('addTaskToTop', () => {
+  it('새 태스크를 목록 맨 앞에 추가한다', () => {
+    const tasks = [make('a'), make('b')]
+    const newTask = make('new')
+
+    const next = addTaskToTop(tasks, newTask)
+
+    expect(next.map((task) => task.id)).toEqual(['new', 'a', 'b'])
+  })
+
+  it('원본 배열을 변경하지 않는다', () => {
+    const tasks = [make('a')]
+    const next = addTaskToTop(tasks, make('new'))
+
+    expect(tasks.map((task) => task.id)).toEqual(['a'])
+    expect(next).not.toBe(tasks)
+  })
+})
+
+describe('replaceTask', () => {
+  it('같은 id의 태스크만 서버 응답으로 교체한다', () => {
+    const tasks = [make('a'), make('b')]
+    const updated = make('a', { title: 'Updated', status: 'done', version: 2 })
+
+    const next = replaceTask(tasks, updated)
+
+    expect(next.find((task) => task.id === 'a')).toEqual(updated)
+    expect(next.find((task) => task.id === 'b')).toEqual(tasks[1])
+  })
+
+  it('원본 배열과 원본 객체를 변경하지 않는다', () => {
+    const tasks = [make('a')]
+    const updated = make('a', { title: 'Updated' })
+
+    const next = replaceTask(tasks, updated)
+
+    expect(tasks[0].title).toBe('Task a')
+    expect(next).not.toBe(tasks)
+  })
+})
+
+describe('removeTaskById', () => {
+  it('대상 id의 태스크만 제거한다', () => {
+    const tasks = [make('a'), make('b'), make('c')]
+
+    const next = removeTaskById(tasks, 'b')
+
+    expect(next.map((task) => task.id)).toEqual(['a', 'c'])
+  })
+
+  it('원본 배열을 변경하지 않는다', () => {
+    const tasks = [make('a'), make('b')]
+
+    const next = removeTaskById(tasks, 'a')
+
+    expect(tasks.map((task) => task.id)).toEqual(['a', 'b'])
+    expect(next).not.toBe(tasks)
   })
 })

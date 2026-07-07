@@ -2,6 +2,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { Task, Status, Priority } from './types'
 import { createTask, deleteTask, getTasks, updateTask } from './api/client'
 import { Column } from './components/Column'
+import { addTaskToTop, moveTask as moveTaskInList, removeTaskById, replaceTask } from './lib/tasks'
 
 const COLUMNS: { status: Status; title: string }[] = [
   { status: 'todo', title: 'To Do' },
@@ -87,7 +88,7 @@ export default function Board() {
       version: 0,
     }
 
-    setTasks((prev) => [tempTask, ...prev])
+    setTasks((prev) => addTaskToTop(prev, tempTask))
     resetCreateForm()
 
     createTask({
@@ -97,11 +98,12 @@ export default function Board() {
       priority: newPriority,
     })
       .then((createdTask) => {
-        setTasks((prev) => prev.map((task) => (task.id === tempId ? createdTask :  task)),
+        setTasks((prev) =>
+          prev.map((task) => (task.id === tempId ? createdTask : task)),
         )
       })
       .catch(() => {
-        setTasks((prev) => prev.filter((task) => task.id !== tempId))
+        setTasks((prev) => removeTaskById(prev, tempId))
         setMessage('태스크 생성에 실패했습니다.')
         window.setTimeout(() => setMessage(null), 3000)
       })
@@ -114,7 +116,7 @@ export default function Board() {
 
     const previousTasks = tasks
 
-    setTasks((prev) => prev.filter((task) => task.id !== id))
+    setTasks((prev) => removeTaskById(prev, id))
 
     deleteTask(id)
       .catch(() => {
@@ -127,24 +129,16 @@ export default function Board() {
 // 카드 이동은 낙관적으로 먼저 반영하고, 서버 실패 시 롤백합니다.
 // task별 최신 요청 번호를 비교해 오래된 응답이 최신 상태를 덮지 않도록 합니다.
   const editTask = (id: string, patch: TaskPatch) => {
+    const task = tasks.find((t) => t.id === id)
+    if (!task) return
+
     const previousTasks = tasks
 
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              ...patch,
-            }
-          : task,
-      ),
-    )
+    setTasks((prev) => replaceTask(prev, { ...task, ...patch }))
 
     updateTask(id, patch)
       .then((updatedTask) => {
-        setTasks((prev) =>
-          prev.map((task) => (task.id === updatedTask.id ? updatedTask : task)),
-        )
+        setTasks((prev) => replaceTask(prev, updatedTask))
       })
       .catch(() => {
         setTasks(previousTasks)
@@ -162,15 +156,13 @@ export default function Board() {
     const requestId = (latestMoveRequestRef.current[id] ?? 0) + 1
     latestMoveRequestRef.current[id] = requestId
 
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)))
+    setTasks((prev) => moveTaskInList(prev, id, status))
 
     updateTask(id, { status, version: task.version })
       .then((updatedTask) => {
         if (latestMoveRequestRef.current[id] !== requestId) return
 
-        setTasks((prev) =>
-          prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
-        )
+        setTasks((prev) => replaceTask(prev, updatedTask))
       })
       .catch(() => {
         if (latestMoveRequestRef.current[id] !== requestId) return

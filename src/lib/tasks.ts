@@ -8,6 +8,18 @@ export function moveTask(tasks: Task[], id: string, status: Status): Task[] {
   return tasks.map((t) => (t.id === id ? { ...t, status } : t))
 }
 
+export function addTaskToTop(tasks: Task[], task: Task): Task[] {
+  return [task, ...tasks]
+}
+
+export function replaceTask(tasks: Task[], updatedTask: Task): Task[] {
+  return tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+}
+
+export function removeTaskById(tasks: Task[], id: string): Task[] {
+  return tasks.filter((task) => task.id !== id)
+}
+
 export function filterByTitle(tasks: Task[], query: string): Task[] {
   const q = query.trim().toLowerCase()
   if (!q) return tasks
