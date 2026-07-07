@@ -199,16 +199,16 @@ export default function Board() {
     )
   }
 
-  if (tasks.length === 0) {
-    return <p className="hint">등록된 태스크가 없습니다.</p>
-  }
-
   return (
     <>
       {message && (
         <div className="toast" role="status">
           {message}
         </div>
+      )}
+
+      {tasks.length === 0 && (
+        <p className="hint">등록된 태스크가 없습니다. 새 태스크를 생성해 주세요.</p>
       )}
 
       <div className="board-actions">
