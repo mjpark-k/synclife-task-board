@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Task, Status } from '../types'
 import { Card } from './Card'
 
@@ -9,6 +11,15 @@ interface Props {
 }
 
 export function Column({ title, status, tasks, onMove }: Props) {
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+
+  const virtualizer = useVirtualizer({
+    count: tasks.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 76,
+    overscan: 8,
+  })
+  
   return (
     <section
       className="column"
@@ -21,11 +32,25 @@ export function Column({ title, status, tasks, onMove }: Props) {
       <h2 className="column-title">
         {title} <span className="count">{tasks.length}</span>
       </h2>
-      <div className="column-body">
-        {/* ⚠️ 5,000개를 그대로 렌더합니다. 대량 데이터 성능 최적화는 당신의 몫입니다. */}
-        {tasks.map((t) => (
-          <Card key={t.id} task={t} />
-        ))}
+      <div ref={scrollRef} className="column-body">
+        <div
+          className="virtual-list"
+          style={{ height: `${virtualizer.getTotalSize()}px` }}
+        >
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const task = tasks[virtualItem.index]
+
+            return (
+              <div
+                key={task.id}
+                className="virtual-row"
+                style={{ transform: `translateY(${virtualItem.start}px)` }}
+              >
+                <Card task={task} />
+              </div>
+            )
+          })}
+        </div>
       </div>
     </section>
   )
