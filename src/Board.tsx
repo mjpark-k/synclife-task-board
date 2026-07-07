@@ -13,6 +13,7 @@ export default function Board() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
 
   const loadTasks = useCallback(() => {
     setLoading(true)
@@ -44,13 +45,21 @@ export default function Board() {
     const task = tasks.find((t) => t.id === id)
     if (!task || task.status === status) return
 
+    const previousTasks = tasks
+
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)))
 
-    updateTask(id, { status, version: task.version }).then((updatedTask) => {
-      setTasks((prev) =>
-        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
-      )
-    })
+    updateTask(id, { status, version: task.version })
+      .then((updatedTask) => {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
+        )
+      })
+      .catch(() => {
+        setTasks(previousTasks)
+        setMessage('저장에 실패해 변경을 되돌렸습니다.')
+        window.setTimeout(() => setMessage(null), 3000)
+      })
   }
 
   const byStatus = useMemo(() => {
@@ -76,16 +85,23 @@ export default function Board() {
   }
 
   return (
-    <div className="board">
-      {COLUMNS.map((col) => (
-        <Column
-          key={col.status}
-          title={col.title}
-          status={col.status}
-          tasks={byStatus[col.status]}
-          onMove={moveTask}
-        />
-      ))}
-    </div>
+    <>
+      {message && (
+        <div className="toast" role="status">
+          {message}
+        </div>
+      )}
+      <div className="board">
+        {COLUMNS.map((col) => (
+          <Column
+            key={col.status}
+            title={col.title}
+            status={col.status}
+            tasks={byStatus[col.status]}
+            onMove={moveTask}
+          />
+        ))}
+      </div>
+    </>
   )
 }
