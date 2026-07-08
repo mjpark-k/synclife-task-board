@@ -1,6 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Task, Status, Priority } from './types'
-import { createTask, deleteTask, getTasks, updateTask } from './api/client'
+import { ApiError, createTask, deleteTask, getTasks, updateTask } from './api/client'
 import { Column } from './components/Column'
 import { 
   addTaskToTop, 
@@ -23,6 +23,20 @@ type TaskPatch = {
   status: Status
   priority: Priority
   version: number
+}
+
+function getWriteFailureMessage(error: unknown, action: string) {
+  if (error instanceof ApiError) {
+    if (error.status === 409) {
+      return '다른 변경사항이 먼저 저장되어 현재 변경을 적용하지 못했습니다. 변경을 되돌렸습니다.'
+    }
+
+    if (error.status >= 500) {
+      return `서버 오류로 ${action}에 실패했습니다. 변경을 되돌렸습니다.`
+    }
+  }
+
+  return `${action}에 실패했습니다. 변경을 되돌렸습니다.`
 }
 
 export default function Board() {
@@ -118,9 +132,9 @@ const filteredTasks = useMemo(() => {
           prev.map((task) => (task.id === tempId ? createdTask : task)),
         )
       })
-      .catch(() => {
+      .catch((error) => {
         setTasks((prev) => removeTaskById(prev, tempId))
-        setMessage('태스크 생성에 실패했습니다.')
+        setMessage(getWriteFailureMessage(error, '생성'))
         window.setTimeout(() => setMessage(null), 3000)
       })
 
@@ -135,9 +149,9 @@ const filteredTasks = useMemo(() => {
     setTasks((prev) => removeTaskById(prev, id))
 
     deleteTask(id)
-      .catch(() => {
+      .catch((error) => {
         setTasks(previousTasks)
-        setMessage('삭제에 실패해 변경을 되돌렸습니다.')
+        setMessage(getWriteFailureMessage(error, '삭제'))
         window.setTimeout(() => setMessage(null), 3000)
       })
   }
@@ -156,9 +170,9 @@ const filteredTasks = useMemo(() => {
       .then((updatedTask) => {
         setTasks((prev) => replaceTask(prev, updatedTask))
       })
-      .catch(() => {
+      .catch((error) => {
         setTasks(previousTasks)
-        setMessage('수정에 실패해 변경을 되돌렸습니다.')
+        setMessage(getWriteFailureMessage(error, '수정'))
         window.setTimeout(() => setMessage(null), 3000)
       })
   }
@@ -180,11 +194,11 @@ const filteredTasks = useMemo(() => {
 
         setTasks((prev) => replaceTask(prev, updatedTask))
       })
-      .catch(() => {
+      .catch((error) => {
         if (latestMoveRequestRef.current[id] !== requestId) return
 
         setTasks(previousTasks)
-        setMessage('이동에 실패해 변경을 되돌렸습니다.')
+        setMessage(getWriteFailureMessage(error, '이동'))
         window.setTimeout(() => setMessage(null), 3000)
       })
   }
