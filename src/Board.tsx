@@ -2,7 +2,14 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { Task, Status, Priority } from './types'
 import { createTask, deleteTask, getTasks, updateTask } from './api/client'
 import { Column } from './components/Column'
-import { addTaskToTop, moveTask as moveTaskInList, removeTaskById, replaceTask } from './lib/tasks'
+import { 
+  addTaskToTop, 
+  filterByPriority,
+  filterByTitle, 
+  moveTask as moveTaskInList, 
+  removeTaskById, 
+  replaceTask 
+} from './lib/tasks'
 
 const COLUMNS: { status: Status; title: string }[] = [
   { status: 'todo', title: 'To Do' },
@@ -30,7 +37,16 @@ export default function Board() {
   const [newPriority, setNewPriority] = useState<Priority>('medium')
   const [newDescription, setNewDescription] = useState('')
 
+  const [searchQuery, setSearchQuery] = useState('')
+  const [priorityFilter, setPriorityFilter] = useState<'all' | Priority>('all')
+
   const latestMoveRequestRef = useRef<Record<string, number>>({})
+
+const filteredTasks = useMemo(() => {
+  return filterByPriority(filterByTitle(tasks, searchQuery), priorityFilter)
+}, [tasks, searchQuery, priorityFilter])
+
+  const hasActiveFilter = searchQuery.trim() !== '' || priorityFilter !== 'all'
 
   const loadTasks = useCallback(() => {
     setLoading(true)
@@ -168,16 +184,16 @@ export default function Board() {
         if (latestMoveRequestRef.current[id] !== requestId) return
 
         setTasks(previousTasks)
-        setMessage('저장에 실패해 변경을 되돌렸습니다.')
+        setMessage('이동에 실패해 변경을 되돌렸습니다.')
         window.setTimeout(() => setMessage(null), 3000)
       })
   }
 
   const byStatus = useMemo(() => {
     const map: Record<Status, Task[]> = { todo: [], 'in-progress': [], done: [] }
-    for (const t of tasks) map[t.status].push(t)
+    for (const t of filteredTasks) map[t.status].push(t)
     return map
-  }, [tasks])
+  }, [filteredTasks])
 
   if (loading) return <p className="hint">불러오는 중…</p>
 
@@ -203,10 +219,30 @@ export default function Board() {
         <p className="hint">등록된 태스크가 없습니다. 새 태스크를 생성해 주세요.</p>
       )}
 
-      <div className="board-actions">
-        <button type="button" onClick={() => setIsCreateOpen((prev) => !prev)}>
-          + Task 생성
-        </button>
+      <div className='board-header'>
+        <div className='board-controls'>
+          <input 
+            value={searchQuery} 
+            onChange={(event) => setSearchQuery(event.target.value)} 
+            placeholder='제목 검색'
+          />
+
+          <select
+            value={priorityFilter}
+            onChange={(event) => setPriorityFilter(event.target.value as 'all' | Priority)}
+          >
+            <option value={'all'}>전체 우선순위</option>
+            <option value={'high'}>High</option>
+            <option value={'medium'}>Medium</option>
+            <option value={'low'}>Low</option>
+          </select>
+        </div>
+
+        <div className="board-actions">
+          <button className='button' type="button" onClick={() => setIsCreateOpen((prev) => !prev)}>
+            + Task 생성
+          </button>
+        </div>
       </div>
 
       {isCreateOpen && (
@@ -254,10 +290,10 @@ export default function Board() {
           </label>
 
           <div className="form-actions">
-            <button type="button" onClick={resetCreateForm}>
+            <button className='button' type="button" onClick={resetCreateForm}>
               취소
             </button>
-            <button type="submit">추가</button>
+            <button className='button' type="submit">추가</button>
           </div>
         </form>
       )}
@@ -272,6 +308,7 @@ export default function Board() {
             onMove={moveTask}
             onDelete={removeTask}
             onEdit={editTask}
+            isFiltered={hasActiveFilter}
           />
         ))}
       </div>

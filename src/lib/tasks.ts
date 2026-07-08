@@ -25,3 +25,11 @@ export function filterByTitle(tasks: Task[], query: string): Task[] {
   if (!q) return tasks
   return tasks.filter((t) => t.title.toLowerCase().includes(q))
 }
+
+export function filterByPriority(
+  tasks: Task[],
+  priority: Task['priority'] | 'all',
+): Task[] {
+  if (priority === 'all') return tasks
+  return tasks.filter((task) => task.priority === priority)
+}

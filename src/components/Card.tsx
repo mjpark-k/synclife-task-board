@@ -114,10 +114,10 @@ export function Card({ task, onDelete, onEdit }: CardProps) {
           />
 
           <div className="card-edit-actions">
-            <button type="button" onClick={cancelEdit}>
+            <button className='button' type="button" onClick={cancelEdit}>
               취소
             </button>
-            <button type="submit">저장</button>
+            <button className='button' type="submit">저장</button>
           </div>
         </form>
       ) : (

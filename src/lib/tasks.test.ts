@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   addTaskToTop,
+  filterByPriority,
   filterByTitle,
   moveTask,
   removeTaskById,
@@ -44,6 +45,29 @@ describe('filterByTitle', () => {
   it('빈 검색어면 전체를 반환한다', () => {
     const tasks = [make('a'), make('b')]
     expect(filterByTitle(tasks, '   ')).toHaveLength(2)
+  })
+})
+
+describe('filterByPriority', () => {
+  it('선택한 우선순위의 태스크만 반환한다', () => {
+    const tasks = [
+      make('a', { priority: 'high' }),
+      make('b', { priority: 'medium' }),
+      make('c', { priority: 'high' }),
+    ]
+
+    const next = filterByPriority(tasks, 'high')
+
+    expect(next.map((task) => task.id)).toEqual(['a', 'c'])
+  })
+
+  it('all이면 전체 태스크를 반환한다', () => {
+    const tasks = [
+      make('a', { priority: 'high' }),
+      make('b', { priority: 'low' }),
+    ]
+
+    expect(filterByPriority(tasks, 'all')).toEqual(tasks)
   })
 })
 
